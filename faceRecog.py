@@ -9,19 +9,35 @@ from queue import Queue
 def cleanup():
     GPIO.cleanup()
 
-def motorThread(in_q):
-    dirr = GPIO.LOW 
-    while True:
-        #print('stepping motor')
-        if in_q.qsize() > 0:
-           dirr = in_q.get()
-        #print(dirr)
+def calibrate():
+    dirr = GPIO.LOW
+    while GPIO.event_detected(switch):
         GPIO.output(direction, dirr)
         GPIO.output(step, GPIO.LOW)
         GPIO.output(step, GPIO.HIGH)
         time.sleep(0.0008)
 
-def camThread(out_q):
+def motorThread(in_q, en_g):
+    dirr = GPIO.LOW
+    angle = 0
+    enab = False
+    GPIO.output(enable, GPIO.LOW)
+    while True:
+        if in_q.qsize() > 0:
+            dirr = in_q.get()
+        if en_q.qsize() > 0:
+            enab = en_q.get()
+        #if GPIO.event_detected(switch):
+        #    print("endstop!!")
+        #    angle = 0
+
+        if enab:
+            GPIO.output(direction, dirr)
+            GPIO.output(step, GPIO.LOW)
+            GPIO.output(step, GPIO.HIGH)
+            time.sleep(0.0008)
+
+def camThread(out_q, en_q):
     # To capture video from webcam. 
     cap = cv2.VideoCapture(0)
     # To use a video file as input 
@@ -39,16 +55,18 @@ def camThread(out_q):
         # Detect the faces
         faces = face_cascade.detectMultiScale(gray, 1.1, 4)
         # Draw the rectangle around each face
+        enable = False
         for (x, y, w, h) in faces:
+            enable = True
             cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
             center = (x+w/2, y+h/2)
             if center[0] <= width/2:
-                print("Left half of image")
+                #print("Left half of image")
                 out_q.put(GPIO.HIGH)
             else:
-                print("Right half of image")
+                #print("Right half of image")
                 out_q.put(GPIO.LOW)
-
+        en_q.put(enable)
 
         # Display
         cv2.imshow('img', img)
@@ -65,27 +83,35 @@ atexit.register(cleanup)
 enable =7 	#White
 step = 5  	#Yellow
 direction = 3 	#Green
+switch = 11
 
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(enable, GPIO.OUT)
 GPIO.setup(step, GPIO.OUT)
 GPIO.setup(direction, GPIO.OUT)
-GPIO.output(enable, GPIO.LOW)
+GPIO.setup(switch, GPIO.IN)
+
+GPIO.output(enable,GPIO.HIGH)
+GPIO.input(switch)
 
 GPIO.setwarnings(False)
+
+#GPIO.add_event_detect(switch, GPIO.RISING)
 
 # Load the cascade
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 print("Loaded cascade")
 
 #Threading
-q = Queue() 
-motor  = threading.Thread(target=motorThread, args=(q, ))
-camera = threading.Thread(target=camThread, args=(q,))
+dir_q = Queue()
+en_q = Queue()
+motor  = threading.Thread(target=motorThread, args=(dir_q,en_q,))
+camera = threading.Thread(target=camThread, args=(dir_q,en_q,))
 motor.start()
 camera.start()
 
-q.join()
+dir_q.join()
+en_q.join()
 
 while True:
     pass
