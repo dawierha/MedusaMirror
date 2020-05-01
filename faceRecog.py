@@ -6,6 +6,8 @@ import threading
 import numpy as np
 from queue import Queue
 
+MAX_ANGLE = 3600
+
 def cleanup():
     GPIO.cleanup()
 
@@ -13,13 +15,25 @@ def calibrate():
     dirr = GPIO.LOW
     #print(GPIO.input(switch))
     GPIO.output(enable, GPIO.LOW)
+    x=0
     while GPIO.input(switch):
         #print(f"Calibrating... {GPIO.input(switch)}")
         GPIO.output(direction, dirr)
         GPIO.output(step, GPIO.LOW)
         GPIO.output(step, GPIO.HIGH)
         time.sleep(0.008)
- 
+        print(f"steps{x}")
+        x+=1
+
+    x=0
+    dirr=GPIO.HIGH
+    while x<30:
+        GPIO.output(direction, dirr)
+        GPIO.output(step, GPIO.LOW)
+        GPIO.output(step, GPIO.HIGH)
+        time.sleep(0.008)
+        x+=1
+
 
 def motorThread(in_q, en_g):
     dirr = GPIO.LOW
@@ -108,7 +122,7 @@ face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 print("Loaded cascade")
 
 calibrate()
-
+print("Calibrated")
 #Threading
 dir_q = Queue()
 en_q = Queue()
