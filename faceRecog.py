@@ -7,6 +7,7 @@ import numpy as np
 from queue import Queue
 
 MAX_ANGLE = 3600
+REWIND_ANGLE = 60
 
 def cleanup():
     GPIO.cleanup()
@@ -27,17 +28,20 @@ def calibrate():
 
     x=0
     dirr=GPIO.HIGH
-    while x<30:
+    while x<REWIND_ANGLE:
         GPIO.output(direction, dirr)
         GPIO.output(step, GPIO.LOW)
         GPIO.output(step, GPIO.HIGH)
         time.sleep(0.008)
         x+=1
 
+def cb_set_angle(channel):
+    print("Entered callback")
+    angle = 0
+
 
 def motorThread(in_q, en_g):
     dirr = GPIO.LOW
-    angle = 0
     enab = False
     GPIO.output(enable, GPIO.LOW)
     while True:
@@ -49,7 +53,7 @@ def motorThread(in_q, en_g):
         #    print("endstop!!")
         #    angle = 0
 
-        if enab:
+        if enab and angle < 3600 and angle > 0:
             GPIO.output(direction, dirr)
             GPIO.output(step, GPIO.LOW)
             GPIO.output(step, GPIO.HIGH)
@@ -87,7 +91,7 @@ def camThread(out_q, en_q):
         en_q.put(enable)
 
         # Display
-        #cv2.imshow('img', img)
+        cv2.imshow('img', img)
         # Stop if escape key is pressed
         k = cv2.waitKey(30) & 0xff
         if k==27:
@@ -115,7 +119,7 @@ GPIO.input(switch)
 
 GPIO.setwarnings(False)
 
-#GPIO.add_event_detect(switch, GPIO.RISING)
+GPIO.add_event_detect(switch, GPIO.FALLING, callback=cb_set_angle, bouncetime=600)
 
 # Load the cascade
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
@@ -123,6 +127,7 @@ print("Loaded cascade")
 
 calibrate()
 print("Calibrated")
+angle = REWIND_ANGLE
 #Threading
 dir_q = Queue()
 en_q = Queue()
