@@ -11,11 +11,15 @@ def cleanup():
 
 def calibrate():
     dirr = GPIO.LOW
-    while GPIO.event_detected(switch):
+    #print(GPIO.input(switch))
+    GPIO.output(enable, GPIO.LOW)
+    while GPIO.input(switch):
+        #print(f"Calibrating... {GPIO.input(switch)}")
         GPIO.output(direction, dirr)
         GPIO.output(step, GPIO.LOW)
         GPIO.output(step, GPIO.HIGH)
-        time.sleep(0.0008)
+        time.sleep(0.008)
+ 
 
 def motorThread(in_q, en_g):
     dirr = GPIO.LOW
@@ -61,15 +65,15 @@ def camThread(out_q, en_q):
             cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
             center = (x+w/2, y+h/2)
             if center[0] <= width/2:
-                #print("Left half of image")
+                print("Left half of image")
                 out_q.put(GPIO.HIGH)
             else:
-                #print("Right half of image")
+                print("Right half of image")
                 out_q.put(GPIO.LOW)
         en_q.put(enable)
 
         # Display
-        cv2.imshow('img', img)
+        #cv2.imshow('img', img)
         # Stop if escape key is pressed
         k = cv2.waitKey(30) & 0xff
         if k==27:
@@ -89,10 +93,11 @@ GPIO.setmode(GPIO.BOARD)
 GPIO.setup(enable, GPIO.OUT)
 GPIO.setup(step, GPIO.OUT)
 GPIO.setup(direction, GPIO.OUT)
-GPIO.setup(switch, GPIO.IN)
+GPIO.setup(switch, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 GPIO.output(enable,GPIO.HIGH)
 GPIO.input(switch)
+
 
 GPIO.setwarnings(False)
 
@@ -101,6 +106,8 @@ GPIO.setwarnings(False)
 # Load the cascade
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 print("Loaded cascade")
+
+calibrate()
 
 #Threading
 dir_q = Queue()
@@ -119,3 +126,4 @@ while True:
 GPIO.cleanup()
 # Release the VideoCapture object
 cap.release()
+
