@@ -41,6 +41,8 @@ These steps are a summary from this opencv installation [guide](https://www.pyim
 In order to activate the camera on the RPI, follow this [guide](https://www.raspberrypi.org/documentation/configuration/camera.md)
 
 ## GPIO
+A summary of the GPIO library used can be found [here](https://www.ics.com/blog/control-raspberry-pi-gpio-pins-python)
+### Pinout map
 Pinout map of the Raspberry Pi
 ```
    3V3  (1) (2)  5V    
@@ -65,7 +67,17 @@ GPIO26 (37) (38) GPIO20
    GND (39) (40) GPIO21
 ```
 
-A summary of the GPIO library used can be found [here](https://www.ics.com/blog/control-raspberry-pi-gpio-pins-python)
+### Connections
+Shows how to connect the first motor
+| Name          | Pin number | Color |
+| ------------- |:----------:| -----:|
+| direction     |   3 	     | Green |
+| step          |   5  	     | Yellow|
+| enable        |   7 	     | White |
+| switch_gnd    |   9        | Brown |
+| switch        |   11       | White |
+
+
 
 ## TODO
 * Fixa lampor runt om
