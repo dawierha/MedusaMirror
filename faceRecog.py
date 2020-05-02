@@ -4,7 +4,10 @@ import time
 import atexit
 import threading
 import numpy as np
+import sys
+import argparse
 from queue import Queue
+
 
 MAX_ANGLE = 3600
 REWIND_ANGLE = 60
@@ -91,21 +94,27 @@ def camThread(out_q, en_q):
         en_q.put(enable)
 
         # Display
-        cv2.imshow('img', img)
+        if args.show:
+            cv2.imshow('img', img)
         # Stop if escape key is pressed
         k = cv2.waitKey(30) & 0xff
         if k==27:
             break
 
+#Arguemnts parsing
+parser = argparse.ArgumentParser(description="Mirror Pi - The mirror that\'s avoiding you")
+parser.add_argument("-s","--show", help="Shows the camera and face recognition output to the screen", action="store_true")
+parser.add_argument("-c","--nocalibrate", help="Skips the calibration", action="store_true")
+args = parser.parse_args()
 
-
-
+#This function is called when the program is forced to close
 atexit.register(cleanup)
 
-enable =7 	#White
-step = 5  	#Yellow
+#Pin setup
 direction = 3 	#Green
-switch = 11
+step = 5  	    #Yellow
+enable =7 	    #White
+switch = 11     #White
 
 GPIO.setmode(GPIO.BOARD)
 GPIO.setup(enable, GPIO.OUT)
@@ -116,7 +125,6 @@ GPIO.setup(switch, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.output(enable,GPIO.HIGH)
 GPIO.input(switch)
 
-
 GPIO.setwarnings(False)
 
 GPIO.add_event_detect(switch, GPIO.FALLING, callback=cb_set_angle, bouncetime=600)
@@ -125,9 +133,12 @@ GPIO.add_event_detect(switch, GPIO.FALLING, callback=cb_set_angle, bouncetime=60
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 print("Loaded cascade")
 
-calibrate()
-print("Calibrated")
+#Calibrates the angle
+if not args.nocalibrate:
+    calibrate()
+    print("Calibrated")
 angle = REWIND_ANGLE
+
 #Threading
 dir_q = Queue()
 en_q = Queue()
