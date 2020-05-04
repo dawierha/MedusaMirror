@@ -32,13 +32,19 @@ sudo pip3 install opencv-contrib-python
 
 These steps are a summary from this opencv installation [guide](https://www.pyimagesearch.com/2019/09/16/install-opencv-4-on-raspberry-pi-4-and-raspbian-buster/)
 
-## Troubleshooting
+### Troubleshooting
 * If you get this error ```undefined symbol: __atomic_fetch_add_8```  
     Run this command: ``` export LD_PRELOAD='/usr/lib/arm-linux-gnueabihf/libatomic.so.1' ``` 
     Or source the .env file included ``` source .env ```
 
-## Camera Setup
+## Camera
 In order to activate the camera on the RPI, follow this [guide](https://www.raspberrypi.org/documentation/configuration/camera.md)
+
+Camera settings from [opencv](https://stackoverflow.com/questions/11420748/setting-camera-parameters-in-opencv-python)
+
+Camera settings for the raspberry built in programs [programs](https://www.raspberrypi.org/documentation/raspbian/applications/camera.md)
+
+Set the shutter speed
 
 ## GPIO
 A summary of the GPIO library used can be found [here](https://www.ics.com/blog/control-raspberry-pi-gpio-pins-python)
