@@ -65,9 +65,9 @@ def motorThread(in_q, en_g):
 def camThread(out_q, en_q):
     # To capture video from webcam. 
     cap = cv2.VideoCapture(0)
-    # To use a video file as input 
-    # cap = cv2.VideoCapture('filename.mp4')
-
+    
+    #Sets the camera parameters
+    #cap.set(5, 24) #Frame rate
     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
 
     while True:
@@ -83,7 +83,8 @@ def camThread(out_q, en_q):
         enable = False
         for (x, y, w, h) in faces:
             enable = True
-            cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
+            if args.show:
+                cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
             center = (x+w/2, y+h/2)
             if center[0] <= width/2:
                 print("Left half of image")
@@ -92,7 +93,7 @@ def camThread(out_q, en_q):
                 print("Right half of image")
                 out_q.put(GPIO.LOW)
         en_q.put(enable)
-
+        
         # Display
         if args.show:
             cv2.imshow('img', img)
