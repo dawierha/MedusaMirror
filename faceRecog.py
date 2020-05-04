@@ -19,24 +19,25 @@ def calibrate():
     dirr = GPIO.LOW
     #print(GPIO.input(switch))
     GPIO.output(enable, GPIO.LOW)
-    x=0
+    steps=0
     while GPIO.input(switch):
         #print(f"Calibrating... {GPIO.input(switch)}")
         GPIO.output(direction, dirr)
         GPIO.output(step, GPIO.LOW)
         GPIO.output(step, GPIO.HIGH)
         time.sleep(0.008)
-        print(f"steps{x}")
-        x+=1
+        sys.stdout.write(f"\rSteps: {steps}")
+        sys.stdout.flush()
+        steps+=1
 
-    x=0
+    steps=0
     dirr=GPIO.HIGH
     while x<REWIND_ANGLE:
         GPIO.output(direction, dirr)
         GPIO.output(step, GPIO.LOW)
         GPIO.output(step, GPIO.HIGH)
         time.sleep(0.008)
-        x+=1
+        steps+=1
 
 def cb_set_angle(channel):
     print("Entered callback")
