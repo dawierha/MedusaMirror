@@ -67,9 +67,9 @@ def camThread(out_q, en_q):
     cap = cv2.VideoCapture(0)
     
     #Sets the camera parameters
-    #cap.set(5, 24) #Frame rate
+    # cap.set(5, 24) #Frame rate
     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-    time_stamp_old = time.time()
+    time_stamp_old = time.perf_counter() 
     while True:
         # Read the frame
         _, img = cap.read()
@@ -103,9 +103,9 @@ def camThread(out_q, en_q):
         
         #Calculates and prints the FPS to std out
         if args.fps:
-            time_stamp_new = time.time()
+            time_stamp_new = time.perf_counter() 
             fps = 1/(time_stamp_new-time_stamp_old)
-            sys.stdout.write("\rFPS: {0}\t".format(fps))
+            sys.stdout.write("\rFPS: {0}\t".format(round(fps, 1)))
             sys.stdout.flush()
             time_stamp_old = time_stamp_new
 
