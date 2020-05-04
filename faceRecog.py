@@ -69,14 +69,13 @@ def camThread(out_q, en_q):
     #Sets the camera parameters
     #cap.set(5, 24) #Frame rate
     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-
+    time_stamp_old = time.time()
     while True:
-        #time.sleep(0.1)
-
         # Read the frame
         _, img = cap.read()
         # Convert to grayscale
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        
         # Detect the faces
         faces = face_cascade.detectMultiScale(gray, 1.1, 4)
         # Draw the rectangle around each face
@@ -87,10 +86,10 @@ def camThread(out_q, en_q):
                 cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
             center = (x+w/2, y+h/2)
             if center[0] <= width/2:
-                print("Left half of image")
+                #print("Left half of image")
                 out_q.put(GPIO.HIGH)
             else:
-                print("Right half of image")
+                #print("Right half of image")
                 out_q.put(GPIO.LOW)
         en_q.put(enable)
         
@@ -101,11 +100,20 @@ def camThread(out_q, en_q):
         k = cv2.waitKey(30) & 0xff
         if k==27:
             break
+        
+        #Calculates and prints the FPS to std out
+        if args.fps:
+            time_stamp_new = time.time()
+            fps = 1/(time_stamp_new-time_stamp_old)
+            sys.stdout.write("\rFPS: {0}\t".format(fps))
+            sys.stdout.flush()
+            time_stamp_old = time_stamp_new
 
 #Arguemnts parsing
 parser = argparse.ArgumentParser(description="Mirror Pi - The mirror that\'s avoiding you")
 parser.add_argument("-s","--show", help="Shows the camera and face recognition output to the screen", action="store_true")
 parser.add_argument("-c","--nocalibrate", help="Skips the calibration", action="store_true")
+parser.add_argument("-f","--fps", help="Calculates and prints the FPS to std out", action="store_true")
 args = parser.parse_args()
 
 #This function is called when the program is forced to close
