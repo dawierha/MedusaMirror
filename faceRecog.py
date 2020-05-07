@@ -10,7 +10,7 @@ from queue import Queue
 
 
 MAX_ANGLE = 3600
-REWIND_ANGLE = 60
+REWIND_ANGLE = 1000
 
 def cleanup():
     GPIO.cleanup()
@@ -32,7 +32,7 @@ def calibrate():
 
     steps=0
     dirr=GPIO.HIGH
-    while x<REWIND_ANGLE:
+    while steps < REWIND_ANGLE:
         GPIO.output(direction, dirr)
         GPIO.output(step, GPIO.LOW)
         GPIO.output(step, GPIO.HIGH)
@@ -45,6 +45,7 @@ def cb_set_angle(channel):
 
 
 def motorThread(in_q, en_g):
+    GPIO.add_event_detect(switch, GPIO.FALLING, callback=cb_set_angle, bouncetime=600)
     dirr = GPIO.LOW
     enab = False
     GPIO.output(enable, GPIO.LOW)
@@ -68,7 +69,7 @@ def camThread(out_q, en_q):
     cap = cv2.VideoCapture(0)
     
     #Sets the camera parameters
-    # cap.set(5, 24) #Frame rate
+   # cap.set(11, 100)
     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
     time_stamp_old = time.perf_counter() 
     while True:
@@ -137,7 +138,7 @@ GPIO.input(switch)
 
 GPIO.setwarnings(False)
 
-GPIO.add_event_detect(switch, GPIO.FALLING, callback=cb_set_angle, bouncetime=600)
+# GPIO.add_event_detect(switch, GPIO.FALLING, callback=cb_set_angle, bouncetime=600)
 
 # Load the cascade
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
