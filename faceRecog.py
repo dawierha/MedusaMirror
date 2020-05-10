@@ -47,7 +47,7 @@ def cb_set_angle(channel):
     angle = 0
 
 
-def motorThread(in_q, en_g):
+def motorThread(stop_event, in_q, en_g):
     GPIO.add_event_detect(switch, GPIO.FALLING, callback=cb_set_angle, bouncetime=600)
     dirr = GPIO.LOW
     enab = False
@@ -66,8 +66,12 @@ def motorThread(in_q, en_g):
             GPIO.output(step, GPIO.LOW)
             GPIO.output(step, GPIO.HIGH)
             time.sleep(0.0008)
+        
+        #Shuts the thread off
+        if stop_event.is_set():
+            break
 
-def camThread(out_q, en_q):
+def camThread(stop_event, out_q, en_q):
     #Sets up the camera
     with PiCamera() as camera:
         camera.resolution = (640, 480)
@@ -122,9 +126,13 @@ def camThread(out_q, en_q):
             if args.fps:
                 time_stamp_new = time.perf_counter() 
                 fps = 1/(time_stamp_new-time_stamp_old)
-                sys.stdout.write("\rFPS: {0}\t".format(round(fps, 1)))
+                sys.stdout.write("\rFPS: {0} ".format(round(fps, 1)))
                 sys.stdout.flush()
                 time_stamp_old = time_stamp_new
+
+            #shuts the thread off
+            if stop_event.is_set():
+                break
 
 #Arguemnts parsing
 parser = argparse.ArgumentParser(description="Mirror Pi - The mirror that\'s avoiding you")
@@ -168,18 +176,25 @@ angle = REWIND_ANGLE
 #Threading
 dir_q = Queue()
 en_q = Queue()
-motor  = threading.Thread(target=motorThread, args=(dir_q,en_q,))
-camera = threading.Thread(target=camThread, args=(dir_q,en_q,))
+stop_event = threading.Event()
+motor  = threading.Thread(target=motorThread, args=(stop_event, dir_q,en_q,))
+camera = threading.Thread(target=camThread, args=(stop_event, dir_q,en_q,))
 motor.start()
 camera.start()
 
 dir_q.join()
 en_q.join()
 
-while True:
-    pass
 
-GPIO.cleanup()
-# Release the VideoCapture object
-cap.release()
+try:
+    while True:
+        pass
+except (KeyboardInterrupt, SystemExit):
+    stop_event.set()
+    camera.join()
+    print("\nExiting...")
+    cleanup()
+
+
+
 
