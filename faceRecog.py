@@ -191,7 +191,6 @@ try:
         pass
 except (KeyboardInterrupt, SystemExit):
     stop_event.set()
-    camera.join()
     print("\nExiting...")
     cleanup()
 
