@@ -6,6 +6,9 @@ import threading
 import numpy as np
 import sys
 import argparse
+from picamera import PiCamera, mmal
+from picamera.array import PiRGBArray
+from picamera.mmalobj import to_rational
 from queue import Queue
 
 
@@ -65,16 +68,23 @@ def motorThread(in_q, en_g):
             time.sleep(0.0008)
 
 def camThread(out_q, en_q):
-    # To capture video from webcam. 
-    cap = cv2.VideoCapture(0)
+    #Sets up the camera
+    camera = PiCamera()
+    camera.resolution = (640, 480)
+    camera.framerate = 5
+    camera.exposure_mode = 'night'
+    #Sets digital gain to 8.0
+    mmal.mmal_port_parameter_set_rational(camera._camera.control._port, mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x5A, to_rational(8.0))
+    rawCapture = PiRGBArray(camera, size=(640, 480))
     
-    #Sets the camera parameters
-   # cap.set(11, 100)
-    width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+
+    width = camera.resolution[0]
     time_stamp_old = time.perf_counter() 
-    while True:
+    for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+        #print(f"target fps: {camera.framerate}, dg: {camera.digital_gain}, exposure: {camera.exposure_mode}")
         # Read the frame
-        _, img = cap.read()
+        img = frame.array
+
         # Convert to grayscale
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         
@@ -102,6 +112,9 @@ def camThread(out_q, en_q):
         k = cv2.waitKey(30) & 0xff
         if k==27:
             break
+        
+        # clear the stream in preparation for the next frame    
+        rawCapture.truncate(0)
         
         #Calculates and prints the FPS to std out
         if args.fps:
