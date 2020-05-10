@@ -38,16 +38,26 @@ These steps are a summary from this opencv installation [guide](https://www.pyim
     Or source the .env file included ``` source .env ```
 
 ## Camera
-In order to activate the camera on the RPI, follow this [guide](https://www.raspberrypi.org/documentation/configuration/camera.md)
+In order to activate the camera on the RPI, follow this [guide.](https://www.raspberrypi.org/documentation/configuration/camera.md)
 
-Camera settings from [opencv](https://stackoverflow.com/questions/11420748/setting-camera-parameters-in-opencv-python)
+Camera settings from [opencv.](https://stackoverflow.com/questions/11420748/setting-camera-parameters-in-opencv-python)
 
-Camera settings for the raspberry built in programs [programs](https://www.raspberrypi.org/documentation/raspbian/applications/camera.md)
+Camera settings for the raspberry built in programs [programs.](https://www.raspberrypi.org/documentation/raspbian/applications/camera.md)
 
-Set the shutter speed
+https://www.pyimagesearch.com/2015/03/30/accessing-the-raspberry-pi-camera-with-opencv-and-python/
+
+https://picamera.readthedocs.io/en/release-1.13/
+
+Running a preview of the camera with the built-in Raspberry pi programs:
+
+```raspivid -p 0,0,640,480 -t 0  ```
+
+Best possible light through mirror I could find for now:
+
+``` raspivid -p 0,0,640,480 -t 0 -fps 5 -ex night```
 
 ## GPIO
-A summary of the GPIO library used can be found [here](https://www.ics.com/blog/control-raspberry-pi-gpio-pins-python)
+A summary of the GPIO library used can be found [here.](https://www.ics.com/blog/control-raspberry-pi-gpio-pins-python)
 ### Pinout map
 Pinout map of the Raspberry Pi
 ```
