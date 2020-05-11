@@ -2,14 +2,13 @@ import cv2
 import RPi.GPIO as GPIO
 import time
 import atexit
-import threading
 import numpy as np
 import sys
 import argparse
 from picamera import PiCamera, mmal
 from picamera.array import PiRGBArray
 from picamera.mmalobj import to_rational
-from queue import Queue
+from multiprocessing import Process, Queue, Event
 
 
 MAX_ANGLE = 3600
@@ -176,14 +175,11 @@ angle = REWIND_ANGLE
 #Threading
 dir_q = Queue()
 en_q = Queue()
-stop_event = threading.Event()
-motor  = threading.Thread(target=motorThread, args=(stop_event, dir_q,en_q,))
-camera = threading.Thread(target=camThread, args=(stop_event, dir_q,en_q,))
+stop_event = Event()
+motor  = Process(target=motorThread, args=(stop_event, dir_q,en_q,))
+camera = Process(target=camThread, args=(stop_event, dir_q,en_q,))
 motor.start()
 camera.start()
-
-dir_q.join()
-en_q.join()
 
 
 try:
