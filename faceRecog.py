@@ -9,13 +9,16 @@ from picamera import PiCamera, mmal
 from picamera.array import PiRGBArray
 from picamera.mmalobj import to_rational
 from multiprocessing import Process, Queue, Event
+import signal
 
 
 MAX_ANGLE = 3600
 REWIND_ANGLE = 1000
 
+
 def cleanup():
     GPIO.cleanup()
+
 
 def calibrate():
     dirr = GPIO.LOW
@@ -41,12 +44,14 @@ def calibrate():
         time.sleep(0.008)
         steps+=1
 
+
 def cb_set_angle(channel):
     print("Entered callback")
     angle = 0
 
 
 def motorThread(stop_event, in_q, en_g):
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
     GPIO.add_event_detect(switch, GPIO.FALLING, callback=cb_set_angle, bouncetime=600)
     dirr = GPIO.LOW
     enab = False
@@ -70,7 +75,9 @@ def motorThread(stop_event, in_q, en_g):
         if stop_event.is_set():
             break
 
+
 def camThread(stop_event, out_q, en_q):
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
     #Sets up the camera
     with PiCamera() as camera:
         camera.resolution = (640, 480)
@@ -80,7 +87,6 @@ def camThread(stop_event, out_q, en_q):
         mmal.mmal_port_parameter_set_rational(camera._camera.control._port, mmal.MMAL_PARAMETER_GROUP_CAMERA + 0x5A, to_rational(8.0))
         rawCapture = PiRGBArray(camera, size=(640, 480))
         
-
         width = camera.resolution[0]
         time_stamp_old = time.perf_counter() 
         for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
@@ -133,6 +139,7 @@ def camThread(stop_event, out_q, en_q):
             if stop_event.is_set():
                 break
 
+
 #Arguemnts parsing
 parser = argparse.ArgumentParser(description="Mirror Pi - The mirror that\'s avoiding you")
 parser.add_argument("-s","--show", help="Shows the camera and face recognition output to the screen", action="store_true")
@@ -160,7 +167,6 @@ GPIO.input(switch)
 
 GPIO.setwarnings(False)
 
-# GPIO.add_event_detect(switch, GPIO.FALLING, callback=cb_set_angle, bouncetime=600)
 
 # Load the cascade
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
@@ -186,8 +192,10 @@ try:
     while True:
         pass
 except (KeyboardInterrupt, SystemExit):
-    stop_event.set()
     print("\nExiting...")
+    stop_event.set()
+    motor.join()
+    camera.join()
     cleanup()
 
 
