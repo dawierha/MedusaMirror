@@ -87,15 +87,20 @@ GPIO26 (37) (38) GPIO20
 Shows how to connect the first motor
 | Name          | Pin number | Color |
 | ------------- |:----------:| -----:|
-| direction     |   3 	     | Green |
-| step          |   5  	     | Yellow|
-| enable        |   7 	     | White |
-| switch_gnd    |   9        | Brown |
-| switch        |   11       | White |
-
-
+| direction  m1 |   3 	     | Green |
+| step       m1 |   5  	     | Yellow|
+| enable     m1 |   7 	     | White |
+| switch_gnd m1 |   9        | Brown |
+| switch     m1 |   11       | White |
+| direction  m2 |   8        | Green |
+| step       m2 |   10       | Yellow|
+| enable     m2 |   12       | White |
+| switch_gnd m2 |   14       | Brown |
+| switch     m2 |   16       | White |
 
 ## TODO
-* Fixa lampor runt om
-* Kolla om det går att sänka fps och höja iso på kameran
-* Testa om det går snabbare på Pi4 
+* Kamerahållare. Anpassa hålavstånd.
+* Gör plats för mutter till rpi4-hållare.
+* Skruva fast switch hållare för motor2
+
+ 
