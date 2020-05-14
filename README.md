@@ -84,7 +84,7 @@ GPIO26 (37) (38) GPIO20
 ```
 
 ### Connections
-Shows how to connect the first motor
+Table with the connections for the motors and switches
 | Name          | Pin number | Color |
 | ------------- |:----------:| -----:|
 | direction  m1 |   3 	     | Green |
@@ -101,6 +101,6 @@ Shows how to connect the first motor
 ## TODO
 * Kamerahållare. Anpassa hålavstånd.
 * Gör plats för mutter till rpi4-hållare.
-* Skruva fast switch hållare för motor2
+* Skruva fast switchhållare för motor2
 
  
