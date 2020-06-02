@@ -99,8 +99,6 @@ Table with the connections for the motors and switches
 | switch     m2 |   16       | White |
 
 ## TODO
-* Kamerahållare. Anpassa hålavstånd.
-* Gör plats för mutter till rpi4-hållare.
-* Skruva fast switchhållare för motor2
+
 
  
