@@ -13,14 +13,15 @@ import signal
 
 
 MAX_ANGLE = 3600
-REWIND_ANGLE = 1000
+REWIND_ANGLE_0 = 1000 #Rewind angle for motor 0
+REWIND_ANGLE_1 = 60   #Rewind angle for motor 1
 
 
 def cleanup():
     GPIO.cleanup()
 
 
-def calibrate():
+def calibrate(direction, step, enable, switch, rewind_angle):
     dirr = GPIO.LOW
     #print(GPIO.input(switch))
     GPIO.output(enable, GPIO.LOW)
@@ -37,7 +38,7 @@ def calibrate():
 
     steps=0
     dirr=GPIO.HIGH
-    while steps < REWIND_ANGLE:
+    while steps < rewind_angle:
         GPIO.output(direction, dirr)
         GPIO.output(step, GPIO.LOW)
         GPIO.output(step, GPIO.HIGH)
@@ -46,16 +47,16 @@ def calibrate():
 
 
 def cb_set_angle(channel):
-    print("Entered callback")
+    print("Entered callback for motor 0")
     angle = 0
 
 
 def motorThread(stop_event, in_q, en_g):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-    GPIO.add_event_detect(switch, GPIO.FALLING, callback=cb_set_angle, bouncetime=600)
+    GPIO.add_event_detect(switch_1, GPIO.FALLING, callback=cb_set_angle, bouncetime=600)
     dirr = GPIO.LOW
     enab = False
-    GPIO.output(enable, GPIO.LOW)
+    GPIO.output(enable_1, GPIO.LOW)
     while True:
         if in_q.qsize() > 0:
             dirr = in_q.get()
@@ -66,9 +67,9 @@ def motorThread(stop_event, in_q, en_g):
         #    angle = 0
 
         if enab and angle < 3600 and angle > 0:
-            GPIO.output(direction, dirr)
-            GPIO.output(step, GPIO.LOW)
-            GPIO.output(step, GPIO.HIGH)
+            GPIO.output(direction_1, dirr)
+            GPIO.output(step_1, GPIO.LOW)
+            GPIO.output(step_1, GPIO.HIGH)
             time.sleep(0.0008)
         
         #Shuts the thread off
@@ -151,22 +152,33 @@ args = parser.parse_args()
 atexit.register(cleanup)
 
 #Pin setup
-direction = 3 	#Green
-step = 5  	    #Yellow
-enable =7 	    #White
-switch = 11     #White
+direction_1 = 3 	#Green
+step_1 = 5  	    #Yellow
+enable_1 =7 	    #White
+switch_1 = 11     #White
+direction_2 = 8 	#Green
+step_2 = 10  	    #Yellow
+enable_2 = 12 	    #White
+switch_2 = 16       #White
 
 GPIO.setmode(GPIO.BOARD)
-GPIO.setup(enable, GPIO.OUT)
-GPIO.setup(step, GPIO.OUT)
-GPIO.setup(direction, GPIO.OUT)
-GPIO.setup(switch, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(enable_1, GPIO.OUT)
+GPIO.setup(step_1, GPIO.OUT)
+GPIO.setup(direction_1, GPIO.OUT)
+GPIO.setup(switch_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-GPIO.output(enable,GPIO.HIGH)
-GPIO.input(switch)
+GPIO.output(enable_1, GPIO.HIGH)
+GPIO.input(switch_1)
+
+GPIO.setup(enable_2, GPIO.OUT)
+GPIO.setup(step_2, GPIO.OUT)
+GPIO.setup(direction_2, GPIO.OUT)
+GPIO.setup(switch_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+GPIO.output(enable_2, GPIO.HIGH)
+GPIO.input(switch_2)
 
 GPIO.setwarnings(False)
-
 
 # Load the cascade
 face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
@@ -174,9 +186,11 @@ print("Loaded cascade")
 
 #Calibrates the angle
 if not args.nocalibrate:
-    calibrate()
-    print("Calibrated")
-angle = REWIND_ANGLE
+    calibrate(direction_1, step_1, enable_1, switch_1, REWIND_ANGLE_0)
+    print("\nCalibrated motor 0")
+    calibrate(direction_2, step_2, enable_2, switch_2, REWIND_ANGLE_1)
+    print("\nCalibrated motor 1")
+angle = REWIND_ANGLE_0
 
 #Threading
 dir_q = Queue()
