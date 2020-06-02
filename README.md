@@ -99,6 +99,7 @@ Table with the connections for the motors and switches
 | switch     m2 |   16       | White |
 
 ## TODO
-
+* Handle when the mirror reachs end points
+* Add logic for the second motor
 
  
