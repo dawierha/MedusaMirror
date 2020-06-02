@@ -5,6 +5,11 @@ Run main code:
 ```
 python3 faceReg.py
 ```
+Test the functionality of the motors
+```
+python3 steer_motor.py -m 0 -d 0 -s 30
+```
+
 
 ## Dependencies
 Basic dependencies for Opencv
