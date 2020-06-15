@@ -64,4 +64,13 @@ youtube
 github
 min blogg
 
+# TODO
+## Erik
+Film
+Description
 
+## Daniel
+Github och github page
+bilder
+block diagram
+Börja på en BOM
