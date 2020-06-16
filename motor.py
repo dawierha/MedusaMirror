@@ -4,8 +4,6 @@ import argparse
 import sys
 
 class Motor():
-
-    #cw_dirr is the clockwise direction for the motor
     def __init__(self, motor_id, direction_pin, step_pin, enable_pin, switch_pin, max_angle, rewind_angle, debug=False, calibrate=True):
         self.motor_id = motor_id
         self.direction_pin = direction_pin
@@ -67,7 +65,8 @@ class Motor():
         if self.debug: print(f"Calibration done for motor {self.motor_id}")
 
     def callback(self, channel):
-        print(f"Entered callback for motor {self.motor_id}")
+        if self.debug: print(f"Entered callback for motor {self.motor_id}")
+        move_angle(self.cw_dirr, self.max_angle/2, 0.0008)
         
 
 
