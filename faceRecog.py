@@ -1,14 +1,15 @@
 import cv2
-import RPi.GPIO as GPIO
-import time
+
+
 import atexit
 import numpy as np
-import sys
+
 import argparse
 from picamera import PiCamera, mmal
 from picamera.array import PiRGBArray
 from picamera.mmalobj import to_rational
 from multiprocessing import Process, Queue, Event
+
 import signal
 
 
@@ -19,68 +20,6 @@ REWIND_ANGLE_1 = 150   #Rewind angle for motor 1
 
 def cleanup():
     GPIO.cleanup()
-
-
-def calibrate(direction, step, enable, switch, rewind_angle):
-    dirr = GPIO.LOW
-    #print(GPIO.input(switch))
-    GPIO.output(enable, GPIO.LOW)
-    steps=0
-    while GPIO.input(switch):
-        #print(f"Calibrating... {GPIO.input(switch)}")
-        GPIO.output(direction, dirr)
-        GPIO.output(step, GPIO.LOW)
-        GPIO.output(step, GPIO.HIGH)
-        time.sleep(0.008)
-        sys.stdout.write(f"\rSteps: {steps}")
-        sys.stdout.flush()
-        steps+=1
-
-    steps=0
-    dirr=GPIO.HIGH
-    while steps < rewind_angle:
-        GPIO.output(direction, dirr)
-        GPIO.output(step, GPIO.LOW)
-        GPIO.output(step, GPIO.HIGH)
-        time.sleep(0.008)
-        steps+=1
-
-def cb_set_angle(channel):
-    if channel == switch_1:
-        pass
-    elif channel == switch_2:
-        pass
-    print(f"Entered callback for motor {channel}")
-    angle = 0
-
-
-def motorThread(stop_event, in_q, en_g):
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-    GPIO.add_event_detect(switch_2, GPIO.FALLING, callback=cb_set_angle, bouncetime=600)
-    dirr = GPIO.LOW
-    enab = False
-    GPIO.output(enable_1, GPIO.LOW)
-    while True:
-        if in_q.qsize() > 0:
-            dirr = in_q.get()
-        if en_q.qsize() > 0:
-            enab = en_q.get()
-        #if GPIO.event_detected(switch):
-        #    print("endstop!!")
-        #    angle = 0
-
-        if enab and angle < 3600 and angle > 0:
-            GPIO.output(direction_1, dirr)
-            GPIO.output(step_1, GPIO.LOW)
-            GPIO.output(step_1, GPIO.HIGH)
-            time.sleep(0.0008)
-            angle = angle + dirr*2-1
-            print(f"Angle: {angle}")
-        
-        #Shuts the thread off
-        if stop_event.is_set():
-            break
-
 
 def camThread(stop_event, out_q, en_q):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -145,77 +84,77 @@ def camThread(stop_event, out_q, en_q):
             if stop_event.is_set():
                 break
 
+if __name__ == "__main__":
+    #Arguemnts parsing
+    parser = argparse.ArgumentParser(description="Mirror Pi - The mirror that\'s avoiding you")
+    parser.add_argument("-s","--show", help="Shows the camera and face recognition output to the screen", action="store_true")
+    parser.add_argument("-c","--nocalibrate", help="Skips the calibration of the motors", action="store_true")
+    parser.add_argument("-f","--fps", help="Calculates and prints the FPS to std out", action="store_true")
+    args = parser.parse_args()
 
-#Arguemnts parsing
-parser = argparse.ArgumentParser(description="Mirror Pi - The mirror that\'s avoiding you")
-parser.add_argument("-s","--show", help="Shows the camera and face recognition output to the screen", action="store_true")
-parser.add_argument("-c","--nocalibrate", help="Skips the calibration", action="store_true")
-parser.add_argument("-f","--fps", help="Calculates and prints the FPS to std out", action="store_true")
-args = parser.parse_args()
+    #This function is called when the program is forced to close
+    atexit.register(cleanup)
 
-#This function is called when the program is forced to close
-atexit.register(cleanup)
+    #Pin setup
+    direction_1 = 3 	#Green
+    step_1 = 5  	    #Yellow
+    enable_1 =7 	    #White
+    switch_1 = 11       #White
+    direction_2 = 8 	#Green
+    step_2 = 10  	    #Yellow
+    enable_2 = 12 	    #White
+    switch_2 = 16       #White
 
-#Pin setup
-direction_1 = 3 	#Green
-step_1 = 5  	    #Yellow
-enable_1 =7 	    #White
-switch_1 = 11     #White
-direction_2 = 8 	#Green
-step_2 = 10  	    #Yellow
-enable_2 = 12 	    #White
-switch_2 = 16       #White
+    GPIO.setmode(GPIO.BOARD)
+    GPIO.setup(enable_1, GPIO.OUT)
+    GPIO.setup(step_1, GPIO.OUT)
+    GPIO.setup(direction_1, GPIO.OUT)
+    GPIO.setup(switch_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-GPIO.setmode(GPIO.BOARD)
-GPIO.setup(enable_1, GPIO.OUT)
-GPIO.setup(step_1, GPIO.OUT)
-GPIO.setup(direction_1, GPIO.OUT)
-GPIO.setup(switch_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.output(enable_1, GPIO.HIGH)
+    GPIO.input(switch_1)
 
-GPIO.output(enable_1, GPIO.HIGH)
-GPIO.input(switch_1)
+    GPIO.setup(enable_2, GPIO.OUT)
+    GPIO.setup(step_2, GPIO.OUT)
+    GPIO.setup(direction_2, GPIO.OUT)
+    GPIO.setup(switch_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-GPIO.setup(enable_2, GPIO.OUT)
-GPIO.setup(step_2, GPIO.OUT)
-GPIO.setup(direction_2, GPIO.OUT)
-GPIO.setup(switch_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.output(enable_2, GPIO.HIGH)
+    GPIO.input(switch_2)
 
-GPIO.output(enable_2, GPIO.HIGH)
-GPIO.input(switch_2)
+    GPIO.setwarnings(False)
 
-GPIO.setwarnings(False)
+    # Load the cascade
+    face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+    print("Loaded cascade")
 
-# Load the cascade
-face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
-print("Loaded cascade")
+    #Calibrates the angle
+    if not args.nocalibrate:
+        calibrate(direction_1, step_1, enable_1, switch_1, REWIND_ANGLE_0)
+        print("\nCalibrated motor 0")
+        calibrate(direction_2, step_2, enable_2, switch_2, REWIND_ANGLE_1)
+        print("\nCalibrated motor 1")
+    angle = REWIND_ANGLE_0
 
-#Calibrates the angle
-if not args.nocalibrate:
-    calibrate(direction_1, step_1, enable_1, switch_1, REWIND_ANGLE_0)
-    print("\nCalibrated motor 0")
-    calibrate(direction_2, step_2, enable_2, switch_2, REWIND_ANGLE_1)
-    print("\nCalibrated motor 1")
-angle = REWIND_ANGLE_0
-
-#Threading
-dir_q = Queue()
-en_q = Queue()
-stop_event = Event()
-motor  = Process(target=motorThread, args=(stop_event, dir_q, en_q,))
-camera = Process(target=camThread, args=(stop_event, dir_q, en_q,))
-motor.start()
-camera.start()
+    #Threading
+    dir_q = Queue()
+    en_q = Queue()
+    stop_event = Event()
+    motor  = Process(target=motorThread, args=(stop_event, dir_q, en_q,))
+    camera = Process(target=camThread, args=(stop_event, dir_q, en_q,))
+    motor.start()
+    camera.start()
 
 
-try:
-    while True:
-        pass
-except (KeyboardInterrupt, SystemExit):
-    print("\nExiting...")
-    stop_event.set()
-    motor.join()
-    camera.join()
-    cleanup()
+    try:
+        while True:
+            pass
+    except (KeyboardInterrupt, SystemExit):
+        print("\nExiting...")
+        stop_event.set()
+        motor.join()
+        camera.join()
+        cleanup()
 
 
 
