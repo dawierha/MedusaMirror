@@ -1,27 +1,51 @@
 import cv2
-
-
 import atexit
 import numpy as np
-
 import argparse
+import RPi.GPIO as GPIO
+import time
+import sys
+import signal
 from picamera import PiCamera, mmal
 from picamera.array import PiRGBArray
 from picamera.mmalobj import to_rational
 from multiprocessing import Process, Queue, Event
-
-import signal
-
+from motor import Motor
 
 MAX_ANGLE = 3600
-REWIND_ANGLE_0 = 1000 #Rewind angle for motor 0
-REWIND_ANGLE_1 = 150   #Rewind angle for motor 1
-
+REWIND_ANGLE_1 = 1000 #Rewind angle for motor 0
+REWIND_ANGLE_2 = 150   #Rewind angle for motor 1
 
 def cleanup():
     GPIO.cleanup()
 
+def motorThread(stop_event, in_q, en_g):
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    motor_1 = Motor(1, direction_1, step_1, enable_1, switch_1, 1500, REWIND_ANGLE_1, debug=True)
+    motor_2 = Motor(2, direction_2, step_2, enable_2, switch_2, 900, REWIND_ANGLE_2, debug=True)
+    while True:
+        if in_q.qsize() > 0:
+            dirr = in_q.get()
+        if en_q.qsize() > 0:
+            enab = en_q.get()
+
+        if enab:
+            GPIO.output(direction_1, dirr)
+            GPIO.output(step_1, GPIO.LOW)
+            GPIO.output(step_1, GPIO.HIGH)
+            time.sleep(0.0008)
+            angle = angle + dirr*2-1
+            print(f"Angle: {angle}")
+        
+        #Shuts the thread off
+        if stop_event.is_set():
+            break
+
 def camThread(stop_event, out_q, en_q):
+    # Load the cascade
+    face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+    print("Loaded cascade")
+
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     #Sets up the camera
     with PiCamera() as camera:
@@ -106,37 +130,9 @@ if __name__ == "__main__":
     switch_2 = 16       #White
 
     GPIO.setmode(GPIO.BOARD)
-    GPIO.setup(enable_1, GPIO.OUT)
-    GPIO.setup(step_1, GPIO.OUT)
-    GPIO.setup(direction_1, GPIO.OUT)
-    GPIO.setup(switch_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-    GPIO.output(enable_1, GPIO.HIGH)
-    GPIO.input(switch_1)
-
-    GPIO.setup(enable_2, GPIO.OUT)
-    GPIO.setup(step_2, GPIO.OUT)
-    GPIO.setup(direction_2, GPIO.OUT)
-    GPIO.setup(switch_2, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-    GPIO.output(enable_2, GPIO.HIGH)
-    GPIO.input(switch_2)
-
     GPIO.setwarnings(False)
 
-    # Load the cascade
-    face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
-    print("Loaded cascade")
-
-    #Calibrates the angle
-    if not args.nocalibrate:
-        calibrate(direction_1, step_1, enable_1, switch_1, REWIND_ANGLE_0)
-        print("\nCalibrated motor 0")
-        calibrate(direction_2, step_2, enable_2, switch_2, REWIND_ANGLE_1)
-        print("\nCalibrated motor 1")
-    angle = REWIND_ANGLE_0
-
-    #Threading
+    #Multiprocesses
     dir_q = Queue()
     en_q = Queue()
     stop_event = Event()
@@ -144,7 +140,6 @@ if __name__ == "__main__":
     camera = Process(target=camThread, args=(stop_event, dir_q, en_q,))
     motor.start()
     camera.start()
-
 
     try:
         while True:

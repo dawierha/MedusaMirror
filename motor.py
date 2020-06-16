@@ -67,35 +67,6 @@ class Motor():
     def callback(self, channel):
         if self.debug: print(f"Entered callback for motor {self.motor_id}")
         move_angle(self.cw_dirr, self.max_angle/2, 0.0008)
-        
-
-
-def motorThread(stop_event, in_q, en_g):
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-    GPIO.add_event_detect(switch_2, GPIO.FALLING, callback=cb_set_angle, bouncetime=600)
-    dirr = GPIO.LOW
-    enab = False
-    GPIO.output(enable_1, GPIO.LOW)
-    while True:
-        if in_q.qsize() > 0:
-            dirr = in_q.get()
-        if en_q.qsize() > 0:
-            enab = en_q.get()
-        #if GPIO.event_detected(switch):
-        #    print("endstop!!")
-        #    angle = 0
-
-        if enab and angle < 3600 and angle > 0:
-            GPIO.output(direction_1, dirr)
-            GPIO.output(step_1, GPIO.LOW)
-            GPIO.output(step_1, GPIO.HIGH)
-            time.sleep(0.0008)
-            angle = angle + dirr*2-1
-            print(f"Angle: {angle}")
-        
-        #Shuts the thread off
-        if stop_event.is_set():
-            break
 
 
 if __name__ == "__main__":
