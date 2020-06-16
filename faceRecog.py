@@ -31,12 +31,7 @@ def motorThread(stop_event, in_q, en_g):
             enable = en_q.get()
 
         if enable:
-            GPIO.output(direction_1, dirr)
-            GPIO.output(step_1, GPIO.LOW)
-            GPIO.output(step_1, GPIO.HIGH)
-            time.sleep(0.0008)
-            angle = angle + dirr*2-1
-            print(f"Angle: {angle}")
+            motor_1.move_angle(dirr, 1, 0.0008)
         
         #Shuts the thread off
         if stop_event.is_set():
@@ -45,7 +40,7 @@ def motorThread(stop_event, in_q, en_g):
 def camThread(stop_event, out_q, en_q):
     # Load the cascade
     face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
-    print("Loaded cascade")
+    if debug: print("\nLoaded cascade")
 
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     #Sets up the camera
