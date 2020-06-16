@@ -12,8 +12,9 @@ from picamera.mmalobj import to_rational
 from multiprocessing import Process, Queue, Event
 from motor import Motor
 
-MAX_ANGLE = 3600
-REWIND_ANGLE_1 = 1000 #Rewind angle for motor 0
+MAX_ANGLE_1 = 1500
+MAX_ANGLE_2 = 900
+REWIND_ANGLE_1 = 750 #Rewind angle for motor 0
 REWIND_ANGLE_2 = 150   #Rewind angle for motor 1
 
 def cleanup():
@@ -21,15 +22,15 @@ def cleanup():
 
 def motorThread(stop_event, in_q, en_g):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-    motor_1 = Motor(1, direction_1, step_1, enable_1, switch_1, 1500, REWIND_ANGLE_1, debug=True)
-    motor_2 = Motor(2, direction_2, step_2, enable_2, switch_2, 900, REWIND_ANGLE_2, debug=True)
+    motor_1 = Motor(1, direction_1, step_1, enable_1, switch_1, MAX_ANGLE_1, REWIND_ANGLE_1, debug=debug)
+    motor_2 = Motor(2, direction_2, step_2, enable_2, switch_2, MAX_ANGLE_2, REWIND_ANGLE_2, debug=debug)
     while True:
         if in_q.qsize() > 0:
             dirr = in_q.get()
         if en_q.qsize() > 0:
-            enab = en_q.get()
+            enable = en_q.get()
 
-        if enab:
+        if enable:
             GPIO.output(direction_1, dirr)
             GPIO.output(step_1, GPIO.LOW)
             GPIO.output(step_1, GPIO.HIGH)
@@ -114,6 +115,7 @@ if __name__ == "__main__":
     parser.add_argument("-s","--show", help="Shows the camera and face recognition output to the screen", action="store_true")
     parser.add_argument("-c","--nocalibrate", help="Skips the calibration of the motors", action="store_true")
     parser.add_argument("-f","--fps", help="Calculates and prints the FPS to std out", action="store_true")
+    parser.add_argument("-d", "--debug", help="Prints debug statements to std out", action="store_true")
     args = parser.parse_args()
 
     #This function is called when the program is forced to close
@@ -136,6 +138,7 @@ if __name__ == "__main__":
     dir_q = Queue()
     en_q = Queue()
     stop_event = Event()
+    debug = args.debug
     motor  = Process(target=motorThread, args=(stop_event, dir_q, en_q,))
     camera = Process(target=camThread, args=(stop_event, dir_q, en_q,))
     motor.start()
