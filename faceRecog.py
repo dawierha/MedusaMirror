@@ -14,7 +14,7 @@ import signal
 
 MAX_ANGLE = 3600
 REWIND_ANGLE_0 = 1000 #Rewind angle for motor 0
-REWIND_ANGLE_1 = 60   #Rewind angle for motor 1
+REWIND_ANGLE_1 = 150   #Rewind angle for motor 1
 
 
 def cleanup():
@@ -45,15 +45,18 @@ def calibrate(direction, step, enable, switch, rewind_angle):
         time.sleep(0.008)
         steps+=1
 
-
 def cb_set_angle(channel):
-    print("Entered callback for motor 0")
+    if channel == switch_1:
+        pass
+    elif channel == switch_2:
+        pass
+    print(f"Entered callback for motor {channel}")
     angle = 0
 
 
 def motorThread(stop_event, in_q, en_g):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
-    GPIO.add_event_detect(switch_1, GPIO.FALLING, callback=cb_set_angle, bouncetime=600)
+    GPIO.add_event_detect(switch_2, GPIO.FALLING, callback=cb_set_angle, bouncetime=600)
     dirr = GPIO.LOW
     enab = False
     GPIO.output(enable_1, GPIO.LOW)
@@ -71,6 +74,8 @@ def motorThread(stop_event, in_q, en_g):
             GPIO.output(step_1, GPIO.LOW)
             GPIO.output(step_1, GPIO.HIGH)
             time.sleep(0.0008)
+            angle = angle + dirr*2-1
+            print(f"Angle: {angle}")
         
         #Shuts the thread off
         if stop_event.is_set():
@@ -196,8 +201,8 @@ angle = REWIND_ANGLE_0
 dir_q = Queue()
 en_q = Queue()
 stop_event = Event()
-motor  = Process(target=motorThread, args=(stop_event, dir_q,en_q,))
-camera = Process(target=camThread, args=(stop_event, dir_q,en_q,))
+motor  = Process(target=motorThread, args=(stop_event, dir_q, en_q,))
+camera = Process(target=camThread, args=(stop_event, dir_q, en_q,))
 motor.start()
 camera.start()
 

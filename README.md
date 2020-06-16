@@ -104,7 +104,9 @@ Table with the connections for the motors and switches
 | switch     m2 |   16       | White |
 
 ## TODO
-* Handle when the mirror reachs end points
-* Add logic for the second motor
+* Two callback functions
+* Handle what happens when the function reaches the endpoints
+* Set appropiate max angle on motors
+
 
  
