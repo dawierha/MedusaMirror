@@ -47,15 +47,15 @@ class Motor():
                 if self.angle >= self.max_angle:
                     self.edge_handling(self.cc_dirr, int(self.max_angle/2), 0.0008)
                 elif not GPIO.input(self.switch_pin):
-                    self.angle = 0
+                    self.angle = 0  
                     self.edge_handling(self.cw_dirr, int(self.max_angle/2), 0.0008)
                 sys.stdout.flush()
                 break
             self.take_step(timeout)
             self.angle += direction*2-1
-            if self.debug: sys.stdout.write(f"\rMotor {self.motor_id} Angle: {self.angle}")
+            if self.debug>1: sys.stdout.write(f"\rMotor {self.motor_id} Angle: {self.angle}")
             sys.stdout.flush()
-        if self.debug: print("")
+        if self.debug>1: print("")
         sys.stdout.flush()
 
     def calibrate(self):

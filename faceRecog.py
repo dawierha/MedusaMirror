@@ -14,34 +14,34 @@ from motor import Motor
 
 MAX_ANGLE_1 = 1500
 MAX_ANGLE_2 = 900
-REWIND_ANGLE_1 = 750 #Rewind angle for motor 0
-REWIND_ANGLE_2 = 150   #Rewind angle for motor 1
+REWIND_ANGLE_1 = 750 #Rewind angle for motor 1
+REWIND_ANGLE_2 = 150   #Rewind angle for motor 2
 
 def cleanup():
     GPIO.cleanup()
 
-def motorThread(stop_event, in_q, en_g):
+def motorThread(stop_event, calibrate_event, in_q, en_g):
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     motor_1 = Motor(1, direction_1, step_1, enable_1, switch_1, MAX_ANGLE_1, REWIND_ANGLE_1, debug=debug)
     motor_2 = Motor(2, direction_2, step_2, enable_2, switch_2, MAX_ANGLE_2, REWIND_ANGLE_2, debug=debug)
+    calibrate_event.set()
+    dirr = GPIO.LOW
     while True:
         if in_q.qsize() > 0:
             dirr = in_q.get()
         if en_q.qsize() > 0:
-            enable = en_q.get()
-
-        if enable:
-            motor_1.move_angle(dirr, 1, 0.0008)
+            en_q.get()
+            motor_1.move_angle(dirr, 100, 0.0008)           
         
         #Shuts the thread off
         if stop_event.is_set():
             break
 
-def camThread(stop_event, out_q, en_q):
+def camThread(stop_event, calibrate_event, out_q, en_q):
     # Load the cascade
     face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
     if debug: print("\nLoaded cascade")
-
+    calibrate_event.wait() #Waits for the motor to finnish calibrating
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     #Sets up the camera
     with PiCamera() as camera:
@@ -73,10 +73,10 @@ def camThread(stop_event, out_q, en_q):
                     cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
                 center = (x+w/2, y+h/2)
                 if center[0] <= width/2:
-                    #print("Left half of image")
+                    print("Left half of image")
                     out_q.put(GPIO.HIGH)
                 else:
-                    #print("Right half of image")
+                    print("Right half of image")
                     out_q.put(GPIO.LOW)
             en_q.put(enable)
             
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     parser.add_argument("-s","--show", help="Shows the camera and face recognition output to the screen", action="store_true")
     parser.add_argument("-c","--nocalibrate", help="Skips the calibration of the motors", action="store_true")
     parser.add_argument("-f","--fps", help="Calculates and prints the FPS to std out", action="store_true")
-    parser.add_argument("-d", "--debug", help="Prints debug statements to std out", action="store_true")
+    parser.add_argument("-d", "--debug", help="Prints debug statements to std out", action="count", default=0)
     args = parser.parse_args()
 
     #This function is called when the program is forced to close
@@ -133,9 +133,10 @@ if __name__ == "__main__":
     dir_q = Queue()
     en_q = Queue()
     stop_event = Event()
+    calibrate_event = Event()
     debug = args.debug
-    motor  = Process(target=motorThread, args=(stop_event, dir_q, en_q,))
-    camera = Process(target=camThread, args=(stop_event, dir_q, en_q,))
+    motor  = Process(target=motorThread, args=(stop_event, calibrate_event, dir_q, en_q,))
+    camera = Process(target=camThread, args=(stop_event, calibrate_event, dir_q, en_q,))
     motor.start()
     camera.start()
 
@@ -148,7 +149,3 @@ if __name__ == "__main__":
         motor.join()
         camera.join()
         cleanup()
-
-
-
-
