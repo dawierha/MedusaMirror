@@ -1,11 +1,12 @@
 import RPi.GPIO as GPIO
 import time
+import argparse
 import sys
 
 class Motor():
 
     #cw_dirr is the clockwise direction for the motor
-    def __init__(self, direction_pin, step_pin, enable_pin, switch_pin, max_angle, rewind_angle, cw_dirr=GPIO.HIGH):
+    def __init__(self, direction_pin, step_pin, enable_pin, switch_pin, max_angle, rewind_angle):
         self.direction_pin = direction_pin
         self.step_pin = step_pin
         self.enable_pin = enable_pin
@@ -13,8 +14,8 @@ class Motor():
         self.max_angle = max_angle
         self.rewind_angle = rewind_angle
         self.angle = 0
-        self.cc_dirr = cw_dirr ^ 1 #Counter clockwise direction
-        self.cw_dirr = cw_dirr
+        self.cc_dirr = GPIO.LOW     #Counter clockwise direction
+        self.cw_dirr = GPIO.HIGH    #Clockwise direction
 
         GPIO.setup(enable_pin, GPIO.OUT)
         GPIO.setup(step_pin, GPIO.OUT)
@@ -28,6 +29,14 @@ class Motor():
         GPIO.output(self.step_pin, GPIO.LOW)
         GPIO.output(self.step_pin, GPIO.HIGH)
         time.sleep(timeout)
+
+    def move_angle(self, direction, angle, timeout):
+        target_angle = self.angle + (direction*2-1)*angle
+        GPIO.output(self.direction_pin, direction)
+        while direction*(self.angle <= target_angle) or (direction^1)*(self.angle >= target_angle):
+            self.take_step(timeout)
+            self.angle += direction*2-1
+            sys.stdout.write(f"\rAngle: {self.angle}")
 
     def calibrate(self):
         GPIO.output(self.enable_pin, GPIO.LOW)
@@ -46,13 +55,9 @@ class Motor():
             self.take_step(0.008)
             self.angle+=1
 
-def cb_set_angle(channel):
-    if channel == switch_1:
-        pass
-    elif channel == switch_2:
-        pass
-    print(f"Entered callback for motor {channel}")
-    angle = 0
+    def callback(channel):
+        print(f"Entered callback for motor {channel}")
+        
 
 
 def motorThread(stop_event, in_q, en_g):
@@ -84,6 +89,19 @@ def motorThread(stop_event, in_q, en_g):
 
 
 if __name__ == "__main__":
+    #Arguemnts parsing
+    parser = argparse.ArgumentParser(description="Motor controll")
+    parser.add_argument("-m","--motor", help="Select which motor to be turned. Can be either 0, 1, 2. Default 0. 2 selects both motors", 
+                        type=int, choices=[0, 1, 2], default=0)
+    parser.add_argument("-d","--direction", help="Selects which direction to turn the motor. Can be eitehr 0 or 1. Default 0.", 
+                        type=int, choices=[0, 1], default=0)
+    parser.add_argument("-s","--steps", help="Specifies the number of steps the motor should take. Default 30.", type=int,
+                        default=30)
+    args = parser.parse_args()
+    print(f"Motor: {args.motor}, direction: {args.direction}, steps: {args.steps}")
+
+
+
     #Pin setup
     direction_1 = 3 	#Green
     step_1 = 5  	    #Yellow
@@ -99,4 +117,5 @@ if __name__ == "__main__":
 
     motor_0 = Motor(direction_1, step_1, enable_1, switch_1, 1800, 300)
     motor_0.calibrate()
+    motor_0.move_angle(motor_0.cc_dirr, 30, 0.016)
     GPIO.cleanup()
