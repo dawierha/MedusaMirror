@@ -25,13 +25,23 @@ def motorThread(stop_event, calibrate_event, in_q, en_g):
     motor_1 = Motor(1, direction_1, step_1, enable_1, switch_1, MAX_ANGLE_1, REWIND_ANGLE_1, debug=debug)
     motor_2 = Motor(2, direction_2, step_2, enable_2, switch_2, MAX_ANGLE_2, REWIND_ANGLE_2, debug=debug)
     calibrate_event.set()
-    dirr = GPIO.LOW
+    direction = GPIO.LOW
+    enable = GPIO.HIGH
     while True:
         if in_q.qsize() > 0:
-            dirr = in_q.get()
+            direction = in_q.get()
         if en_q.qsize() > 0:
-            en_q.get()
-            motor_1.move_angle(dirr, 100, 0.0008)           
+            enable = en_q.get()
+        
+        if enable and motor_1.angle < MAX_ANGLE_1 and not GPIO.input(motor_1.switch_pin):
+            GPIO.output(motor_1.direction_pin, direction)
+            motor_1.take_step(0.0008)      
+            motor_1.angle += direction*2-1   
+        elif enable and motor_1.angle > MAX_ANGLE_1:
+            motor_1.edge_handling(motor_1.cc_dirr, int(MAX_ANGLE_1/2), 0.0008)  
+        elif not GPIO.input(motor_1.switch_pin):
+            motor_1.angle = 0 
+            motor_1.edge_handling(motor_1.cw_dirr, int(MAX_ANGLE_1/2), 0.0008)
         
         #Shuts the thread off
         if stop_event.is_set():
