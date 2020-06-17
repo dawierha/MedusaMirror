@@ -85,6 +85,7 @@ class Motor():
             self.edge_handling(self.cc_dirr, int(self.max_angle/2), timeout)  
         
         elif not GPIO.input(self.switch_pin):
+            time.sleep(0.05)
             self.angle = 0 
             self.edge_handling(self.cw_dirr, int(self.max_angle/2), timeout)
 
