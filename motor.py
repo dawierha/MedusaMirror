@@ -52,7 +52,6 @@ class Motor():
         GPIO.output(self.direction_pin, self.cc_dirr)
         steps=0
         while GPIO.input(self.switch_pin):
-            #print(f"Calibrating... {GPIO.input(self.switch_pin)}")
             self.take_step(0.008)
             if self.debug: sys.stdout.write(f"\rMotor {self.motor_id} Steps: {steps}")
             sys.stdout.flush()
@@ -63,7 +62,6 @@ class Motor():
         while self.angle <= self.rewind_angle:
             self.take_step(0.008)
             self.angle += 1
-        #self.move_angle(self.cw_dirr, self.rewind_angle, 0.008)
         if self.debug: print(f"Calibration done for motor {self.motor_id}")
 
     def edge_handling(self, direction, target_angle, timeout):

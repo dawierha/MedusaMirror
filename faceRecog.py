@@ -82,10 +82,10 @@ def camThread(stop_event, calibrate_event, out_q, en_q):
                     cv2.rectangle(img, (x, y), (x+w, y+h), (255, 0, 0), 2)
                 center = (x+w/2, y+h/2)
                 if center[0] <= width/2:
-                    print("Left half of image")
+                    if debug: print("Left half of image")
                     out_q.put(GPIO.HIGH)
                 else:
-                    print("Right half of image")
+                    if debug: print("Right half of image")
                     out_q.put(GPIO.LOW)
             en_q.put(enable)
             
