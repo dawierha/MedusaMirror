@@ -24,11 +24,22 @@ class Motor():
         GPIO.setup(direction_pin, GPIO.OUT)
         GPIO.setup(switch_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-        #Turns off motor
-        GPIO.output(enable_pin, GPIO.HIGH)
+        self.disable()
+
+    #Turns on motor
+    def enable(self): 
+        GPIO.output(self.enable_pin, GPIO.LOW)
+
+    #Turns off motor
+    def disable(self): 
+        GPIO.output(self.enable_pin, GPIO.HIGH)
 
     def add_event_detect(self, edge=GPIO.FALLING, bouncetime=600):
         GPIO.add_event_detect(self.switch_pin, edge, callback=self.cb_switch, bouncetime=bouncetime)
+
+    def cb_switch(self, channel):
+        if self.debug: print(f"Entered callback for motor {self.motor_id}")
+        self.disable()
         
     def take_step(self, timeout):
         GPIO.output(self.step_pin, GPIO.LOW)
@@ -45,9 +56,9 @@ class Motor():
             self.take_step(0.008)
             if self.debug: sys.stdout.write(f"\rMotor {self.motor_id} Steps: {steps}")
             sys.stdout.flush()
-            steps+=1
+            steps += 1
         if self.debug: print("")
-        self.angle=0
+        self.angle = 0
         GPIO.output(self.direction_pin, self.cw_dirr)
         while self.angle <= self.rewind_angle:
             self.take_step(0.008)
@@ -55,13 +66,9 @@ class Motor():
         #self.move_angle(self.cw_dirr, self.rewind_angle, 0.008)
         if self.debug: print(f"Calibration done for motor {self.motor_id}")
 
-    def cb_switch(self, channel):
-        if self.debug: print(f"Entered callback for motor {self.motor_id}")
-        GPIO.output(self.enable_pin, GPIO.HIGH)
-
     def edge_handling(self, direction, target_angle, timeout):
         if self.debug: print(f"Entered Edgehandling for motor {self.motor_id} with angle: {self.angle}")
-        GPIO.output(self.enable_pin, GPIO.LOW)
+        self.enable()
         GPIO.output(self.direction_pin, direction)
         while direction*(self.angle <= target_angle) or (direction^1)*(self.angle >= target_angle):
             self.take_step(timeout)
@@ -70,7 +77,7 @@ class Motor():
         if self.debug: print("")
     
     def move(self, direction, timeout):
-        if self.angle < self.max_angle and self.angle > 0:
+        if self.angle < self.max_angle and GPIO.input(self.switch_pin):
             GPIO.output(self.direction_pin, direction)
             self.take_step(timeout)      
             self.angle += direction*2-1   

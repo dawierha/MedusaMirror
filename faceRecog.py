@@ -34,6 +34,10 @@ def motorThread(stop_event, calibrate_event, in_q, en_g):
     direction = None
     enable = None
     while True:
+        #Shuts the thread off
+        if stop_event.is_set():
+            break
+            
         if in_q.qsize() > 0:
             direction = in_q.get()
         if en_q.qsize() > 0:
@@ -41,9 +45,6 @@ def motorThread(stop_event, calibrate_event, in_q, en_g):
         if enable:
             motor_1.move(direction, 0.0008)
         
-        #Shuts the thread off
-        if stop_event.is_set():
-            break
 
 def camThread(stop_event, calibrate_event, out_q, en_q):
     # Load the cascade
