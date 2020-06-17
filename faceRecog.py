@@ -37,7 +37,7 @@ def motorThread(stop_event, calibrate_event, in_q, en_g):
         #Shuts the thread off
         if stop_event.is_set():
             break
-            
+
         if in_q.qsize() > 0:
             direction = in_q.get()
         if en_q.qsize() > 0:
@@ -47,11 +47,10 @@ def motorThread(stop_event, calibrate_event, in_q, en_g):
         
 
 def camThread(stop_event, calibrate_event, out_q, en_q):
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
     # Load the cascade
     face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
-    if debug: print("\nLoaded cascade")
-    calibrate_event.wait() #Waits for the motor to finnish calibrating
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    if debug: print("\nLoaded cascade")    
     #Sets up the camera
     with PiCamera() as camera:
         camera.resolution = (640, 480)
@@ -63,6 +62,7 @@ def camThread(stop_event, calibrate_event, out_q, en_q):
         
         width = camera.resolution[0]
         time_stamp_old = time.perf_counter() 
+        calibrate_event.wait() #Waits for the motor to finnish calibrating
         for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
             #print(f"target fps: {camera.framerate}, dg: {camera.digital_gain}, exposure: {camera.exposure_mode}")
             # Read the frame
