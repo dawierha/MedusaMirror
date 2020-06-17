@@ -28,7 +28,7 @@ class Motor():
         GPIO.output(enable_pin, GPIO.HIGH)
 
     def add_event_detect(self, edge=GPIO.FALLING, bouncetime=600):
-        GPIO.add_event_detect(self.switch_pin, edge, callback=self.callback, bouncetime=bouncetime)
+        GPIO.add_event_detect(self.switch_pin, edge, callback=self.cb_switch, bouncetime=bouncetime)
         
     def take_step(self, timeout):
         GPIO.output(self.step_pin, GPIO.LOW)
@@ -41,19 +41,21 @@ class Motor():
         GPIO.output(self.direction_pin, self.cc_dirr)
         steps=0
         while GPIO.input(self.switch_pin):
-            #print(f"Calibrating... {GPIO.input(switch)}")
+            #print(f"Calibrating... {GPIO.input(self.switch_pin)}")
             self.take_step(0.008)
             if self.debug: sys.stdout.write(f"\rMotor {self.motor_id} Steps: {steps}")
             sys.stdout.flush()
             steps+=1
         if self.debug: print("")
         self.angle=0
-        while self.angle < self.rewind_angle:
+        GPIO.output(self.direction_pin, self.cw_dirr)
+        while self.angle <= self.rewind_angle:
             self.take_step(0.008)
+            self.angle += 1
         #self.move_angle(self.cw_dirr, self.rewind_angle, 0.008)
         if self.debug: print(f"Calibration done for motor {self.motor_id}")
 
-    def callback(self, channel):
+    def cb_switch(self, channel):
         if self.debug: print(f"Entered callback for motor {self.motor_id}")
         GPIO.output(self.enable_pin, GPIO.HIGH)
 
