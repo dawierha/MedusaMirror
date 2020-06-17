@@ -74,6 +74,7 @@ class Motor():
             if self.debug: sys.stdout.write(f"\rEdge Motor {self.motor_id} Angle: {self.angle}")
         if self.debug: print("")
     
+    #Moves one step in the given 'direction'. Checks that the angle is witin bounds
     def move(self, direction, timeout):
         if self.angle < self.max_angle and GPIO.input(self.switch_pin):
             GPIO.output(self.direction_pin, direction)
@@ -87,6 +88,7 @@ class Motor():
             self.angle = 0 
             self.edge_handling(self.cw_dirr, int(self.max_angle/2), timeout)
 
+    #Moves 'angle' decidegrees in the given 'direction'. Checks that the angle is whitin bounds
     def move_angle(self, direction, angle, timeout):
         target_angle = self.angle + (direction*2-1)*angle
         GPIO.output(self.direction_pin, direction)
